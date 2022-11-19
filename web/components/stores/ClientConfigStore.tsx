@@ -1,11 +1,12 @@
 import { FC, useEffect, useState } from 'react';
-import { atom, selector, useRecoilState, useSetRecoilState } from 'recoil';
+import { atom, selector, useRecoilState, useSetRecoilState, RecoilEnv } from 'recoil';
 import { useMachine } from '@xstate/react';
 import { makeEmptyClientConfig, ClientConfig } from '../../interfaces/client-config.model';
 import ClientConfigService from '../../services/client-config-service';
 import ChatService from '../../services/chat-service';
 import WebsocketService from '../../services/websocket-service';
 import { ChatMessage } from '../../interfaces/chat-message.model';
+import { CurrentUser } from '../../interfaces/current-user';
 import { ServerStatus, makeEmptyServerStatus } from '../../interfaces/server-status.model';
 import appStateModel, {
   AppStateEvent,
@@ -20,11 +21,13 @@ import {
   MessageVisibilityEvent,
   SocketEvent,
 } from '../../interfaces/socket-events';
-
+import { mergeMeta } from '../../utils/helpers';
 import handleConnectedClientInfoMessage from './eventhandlers/connected-client-info-handler';
 import ServerStatusService from '../../services/status-service';
 import handleNameChangeEvent from './eventhandlers/handleNameChangeEvent';
 import { DisplayableError } from '../../types/displayable-error';
+
+RecoilEnv.RECOIL_DUPLICATE_ATOM_KEY_CHECKING_ENABLED = false;
 
 const SERVER_STATUS_POLL_DURATION = 5000;
 const ACCESS_TOKEN_KEY = 'accessToken';
@@ -44,28 +47,13 @@ export const clientConfigStateAtom = atom({
   default: makeEmptyClientConfig(),
 });
 
-export const chatDisplayNameAtom = atom<string>({
-  key: 'chatDisplayName',
-  default: null,
-});
-
-export const chatDisplayColorAtom = atom<number>({
-  key: 'chatDisplayColor',
-  default: null,
-});
-
-export const chatUserIdAtom = atom<string>({
-  key: 'chatUserIdAtom',
-  default: null,
-});
-
-export const isChatModeratorAtom = atom<boolean>({
-  key: 'isModeratorAtom',
-  default: false,
-});
-
 export const accessTokenAtom = atom<string>({
   key: 'accessTokenAtom',
+  default: null,
+});
+
+export const currentUserAtom = atom<CurrentUser>({
+  key: 'currentUserAtom',
   default: null,
 });
 
@@ -82,6 +70,7 @@ export const chatAuthenticatedAtom = atom<boolean>({
 export const websocketServiceAtom = atom<WebsocketService>({
   key: 'websocketServiceAtom',
   default: null,
+  dangerouslyAllowMutability: true,
 });
 
 export const appStateAtom = atom<AppStateOptions>({
@@ -126,7 +115,7 @@ export const isChatVisibleSelector = selector({
   get: ({ get }) => {
     const state: AppStateOptions = get(appStateAtom);
     const userVisibleToggle: boolean = get(chatVisibleToggleAtom);
-    const accessToken: String = get(accessTokenAtom);
+    const accessToken: string = get(accessTokenAtom);
     return accessToken && state.chatAvailable && userVisibleToggle;
   },
 });
@@ -135,7 +124,7 @@ export const isChatAvailableSelector = selector({
   key: 'isChatAvailableSelector',
   get: ({ get }) => {
     const state: AppStateOptions = get(appStateAtom);
-    const accessToken: String = get(accessTokenAtom);
+    const accessToken: string = get(accessTokenAtom);
     return accessToken && state.chatAvailable;
   },
 });
@@ -161,27 +150,12 @@ export const visibleChatMessagesSelector = selector<ChatMessage[]>({
   },
 });
 
-// Take a nested object of state metadata and merge it into
-// a single flattened node.
-function mergeMeta(meta) {
-  return Object.keys(meta).reduce((acc, key) => {
-    const value = meta[key];
-    Object.assign(acc, value);
-
-    return acc;
-  }, {});
-}
-
 export const ClientConfigStore: FC = () => {
   const [appState, appStateSend, appStateService] = useMachine(appStateModel);
-
-  const setChatDisplayName = useSetRecoilState<string>(chatDisplayNameAtom);
-  const setChatDisplayColor = useSetRecoilState<Number>(chatDisplayColorAtom);
-  const setChatUserId = useSetRecoilState<string>(chatUserIdAtom);
+  const [currentUser, setCurrentUser] = useRecoilState(currentUserAtom);
   const setChatAuthenticated = useSetRecoilState<boolean>(chatAuthenticatedAtom);
-  const setIsChatModerator = useSetRecoilState<boolean>(isChatModeratorAtom);
   const [clientConfig, setClientConfig] = useRecoilState<ClientConfig>(clientConfigStateAtom);
-  const setServerStatus = useSetRecoilState<ServerStatus>(serverStatusState);
+  const [serverStatus, setServerStatus] = useRecoilState<ServerStatus>(serverStatusState);
   const setClockSkew = useSetRecoilState<Number>(clockSkewAtom);
   const [chatMessages, setChatMessages] = useRecoilState<ChatMessage[]>(chatMessagesAtom);
   const [accessToken, setAccessToken] = useRecoilState<string>(accessTokenAtom);
@@ -189,7 +163,7 @@ export const ClientConfigStore: FC = () => {
   const setGlobalFatalErrorMessage = useSetRecoilState<DisplayableError>(fatalErrorStateAtom);
   const setWebsocketService = useSetRecoilState<WebsocketService>(websocketServiceAtom);
   const [hiddenMessageIds, setHiddenMessageIds] = useRecoilState<string[]>(removedMessageIdsAtom);
-  const [hasLoadedStatus, setHasLoadedStatus] = useState(false);
+  const [, setHasLoadedStatus] = useState(false);
   const [hasLoadedConfig, setHasLoadedConfig] = useState(false);
 
   let ws: WebsocketService;
@@ -201,8 +175,21 @@ export const ClientConfigStore: FC = () => {
     });
   };
   const sendEvent = (event: string) => {
-    // console.log('---- sending event:', event);
+    // console.debug('---- sending event:', event);
     appStateSend({ type: event });
+  };
+
+  const handleStatusChange = (status: ServerStatus) => {
+    if (appState.matches('loading')) {
+      sendEvent(AppStateEvent.Loaded);
+      return;
+    }
+
+    if (status.online && appState.matches('ready.offline')) {
+      sendEvent(AppStateEvent.Online);
+    } else if (!status.online && !appState.matches('ready.offline')) {
+      sendEvent(AppStateEvent.Offline);
+    }
   };
 
   const updateClientConfig = async () => {
@@ -230,11 +217,6 @@ export const ClientConfigStore: FC = () => {
       const clockSkew = new Date(serverTime).getTime() - Date.now();
       setClockSkew(clockSkew);
 
-      if (status.online) {
-        sendEvent(AppStateEvent.Online);
-      } else if (!status.online) {
-        sendEvent(AppStateEvent.Offline);
-      }
       setGlobalFatalErrorMessage(null);
     } catch (error) {
       sendEvent(AppStateEvent.Fail);
@@ -244,7 +226,6 @@ export const ClientConfigStore: FC = () => {
       );
       console.error(`serverStatusState -> getStatus() ERROR: \n${error}`);
     }
-    return null;
   };
 
   const handleUserRegistration = async (optionalDisplayName?: string) => {
@@ -257,17 +238,18 @@ export const ClientConfigStore: FC = () => {
     try {
       sendEvent(AppStateEvent.NeedsRegister);
       const response = await ChatService.registerUser(optionalDisplayName);
-      console.log(`ChatService -> registerUser() response: \n${response}`);
       const { accessToken: newAccessToken, displayName: newDisplayName, displayColor } = response;
       if (!newAccessToken) {
         return;
       }
 
-      console.log('setting access token', newAccessToken);
+      setCurrentUser({
+        ...currentUser,
+        displayName: newDisplayName,
+        displayColor,
+      });
       setAccessToken(newAccessToken);
       setLocalStorage(ACCESS_TOKEN_KEY, newAccessToken);
-      setChatDisplayName(newDisplayName);
-      setChatDisplayColor(displayColor);
     } catch (e) {
       sendEvent(AppStateEvent.Fail);
       console.error(`ChatService -> registerUser() ERROR: \n${e}`);
@@ -276,7 +258,7 @@ export const ClientConfigStore: FC = () => {
 
   const resetAndReAuth = () => {
     setLocalStorage(ACCESS_TOKEN_KEY, '');
-    setAccessToken('');
+    setAccessToken(null);
     handleUserRegistration();
   };
 
@@ -299,11 +281,8 @@ export const ClientConfigStore: FC = () => {
       case MessageType.CONNECTED_USER_INFO:
         handleConnectedClientInfoMessage(
           message as ConnectedClientInfoEvent,
-          setChatDisplayName,
-          setChatDisplayColor,
-          setChatUserId,
-          setIsChatModerator,
           setChatAuthenticated,
+          setCurrentUser,
         );
         setChatMessages(currentState => [...currentState, message as ChatEvent]);
         break;
@@ -317,6 +296,9 @@ export const ClientConfigStore: FC = () => {
         setChatMessages(currentState => [...currentState, message as ChatEvent]);
         break;
       case MessageType.SYSTEM:
+        setChatMessages(currentState => [...currentState, message as ChatEvent]);
+        break;
+      case MessageType.CHAT_ACTION:
         setChatMessages(currentState => [...currentState, message as ChatEvent]);
         break;
       case MessageType.VISIBILITY_UPDATE:
@@ -338,13 +320,17 @@ export const ClientConfigStore: FC = () => {
 
   const startChat = async () => {
     try {
-      ws = new WebsocketService(accessToken, '/ws');
+      const { socketHostOverride } = clientConfig;
+      const host = socketHostOverride || window.location.toString();
+      ws = new WebsocketService(accessToken, '/ws', host);
       ws.handleMessage = handleMessage;
       setWebsocketService(ws);
     } catch (error) {
       console.error(`ChatService -> startChat() ERROR: \n${error}`);
     }
   };
+
+  const handleChatNotification = () => {};
 
   // Read the config and status on initial load from a JSON string that lives
   // in window. This is placed there server-side and allows for fast initial
@@ -354,32 +340,37 @@ export const ClientConfigStore: FC = () => {
       if ((window as any).configHydration) {
         const config = JSON.parse((window as any).configHydration);
         setClientConfig(config);
+        setHasLoadedConfig(true);
       }
     } catch (e) {
-      // console.error('Error parsing config hydration', e);
+      console.error('Error parsing config hydration', e);
     }
 
     try {
       if ((window as any).statusHydration) {
         const status = JSON.parse((window as any).statusHydration);
         setServerStatus(status);
+        setHasLoadedStatus(true);
       }
     } catch (e) {
-      // console.error('error parsing status hydration', e);
+      console.error('error parsing status hydration', e);
     }
   }, []);
 
   useEffect(() => {
-    if (hasLoadedStatus && hasLoadedConfig) {
-      sendEvent(AppStateEvent.Loaded);
-    }
-  }, [hasLoadedStatus, hasLoadedConfig]);
+    handleStatusChange(serverStatus);
+  }, [serverStatus]);
 
   useEffect(() => {
     if (!clientConfig.chatDisabled && accessToken && hasLoadedConfig) {
       startChat();
     }
   }, [hasLoadedConfig, accessToken]);
+
+  // Notify about chat activity when backgrounded.
+  useEffect(() => {
+    handleChatNotification();
+  }, [chatMessages]);
 
   useEffect(() => {
     updateClientConfig();
@@ -390,7 +381,11 @@ export const ClientConfigStore: FC = () => {
     serverStatusRefreshPoll = setInterval(() => {
       updateServerStatus();
     }, SERVER_STATUS_POLL_DURATION);
-  }, [appState]);
+
+    return () => {
+      clearInterval(serverStatusRefreshPoll);
+    };
+  }, []);
 
   useEffect(() => {
     if (!accessToken) {
@@ -402,10 +397,6 @@ export const ClientConfigStore: FC = () => {
 
   useEffect(() => {
     appStateService.onTransition(state => {
-      if (!state.changed) {
-        return;
-      }
-
       const metadata = mergeMeta(state.meta) as AppStateOptions;
 
       // console.debug('--- APP STATE: ', state.value);
@@ -413,7 +404,7 @@ export const ClientConfigStore: FC = () => {
 
       setAppState(metadata);
     });
-  });
+  }, []);
 
   return null;
 };

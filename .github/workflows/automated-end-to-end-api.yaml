@@ -6,9 +6,19 @@ on:
       - 'webroot/**'
       - 'web/**'
 
+  pull_request:
+    paths-ignore:
+      - 'webroot/**'
+      - 'web/**'
+
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
     steps:
       - uses: earthly/actions-setup@v1
         with:

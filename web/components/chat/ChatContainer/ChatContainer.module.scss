@@ -42,7 +42,7 @@
 .chatContainer {
   display: flex;
   flex-direction: column;
-  background-color: var(--theme-color-background-chat);
+  background-color: var(--theme-color-components-chat-background);
   height: 100%;
 }
 .virtuoso {
@@ -50,4 +50,18 @@
   flex-grow: 1;
   overflow-y: scroll;
   overflow-x: hidden;
+}
+
+.virtuoso::-webkit-scrollbar {
+  width: 5px;
+  height: auto;
+  background-color: var(--theme-color-components-chat-background);
+}
+
+.virtuoso::-webkit-scrollbar-thumb {
+  background: var(--theme-color-components-scrollbar-thumb);
+}
+
+.chatTextField {
+  border-top: 1px solid lightgray;
 }

@@ -1,18 +1,14 @@
-.root {
-  background-color: var(--theme-color-background-chat);
-  display: none;
-  --header-h: 64px;
-}
+@import '../../../styles/mixins.scss';
 
-@media (min-width: 768px) {
-  .root {
+.root {
+  background-color: var(--theme-color-components-chat-background);
+  display: none;
+  @include screen(desktop) {
     position: sticky;
-    top: var(--header-h);
     display: block;
-    height: calc(100vh - var(--header-h));
-    max-height: calc(100vh - var(--header-h));
   }
 }
+
 /*
 First div is .ant-layout-sider-children
 Only way to target it apparently

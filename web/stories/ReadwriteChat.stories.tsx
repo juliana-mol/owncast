@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import { ComponentStory, ComponentMeta } from '@storybook/react';
-import { RecoilRoot, useSetRecoilState } from 'recoil';
+import { RecoilRoot, useRecoilState, useSetRecoilState } from 'recoil';
 import ReadWritePage from '../pages/embed/chat/readwrite/index';
 import { ChatMessage } from '../interfaces/chat-message.model';
 import {
   chatMessagesAtom,
-  chatDisplayNameAtom,
+  currentUserAtom,
   clientConfigStateAtom,
 } from '../components/stores/ClientConfigStore';
 import { ClientConfig } from '../interfaces/client-config.model';
@@ -13,7 +13,9 @@ import { ClientConfig } from '../interfaces/client-config.model';
 export default {
   title: 'owncast/Chat/Embeds/Read-write chat',
   component: ReadWritePage,
-  parameters: {},
+  parameters: {
+    chromatic: { diffThreshold: 0.2 },
+  },
 } as ComponentMeta<typeof ReadWritePage>;
 
 const testMessages =
@@ -21,8 +23,8 @@ const testMessages =
 const messages: ChatMessage[] = JSON.parse(testMessages);
 
 const Page = () => {
+  const [currentUser, setCurrentUser] = useRecoilState(currentUserAtom);
   const setMessages = useSetRecoilState(chatMessagesAtom);
-  const setDisplayName = useSetRecoilState(chatDisplayNameAtom);
   const setClientConfig = useSetRecoilState<ClientConfig>(clientConfigStateAtom);
 
   const fakeConfig: ClientConfig = {
@@ -41,11 +43,16 @@ const Page = () => {
     federation: undefined,
     notifications: undefined,
     authentication: undefined,
+    appearanceVariables: undefined,
   };
 
   useEffect(() => {
     setMessages(messages);
-    setDisplayName('fake-chat-user');
+    setCurrentUser({
+      ...currentUser,
+      displayName: 'fake-chat-user',
+    });
+
     setClientConfig(fakeConfig);
   }, []);
 

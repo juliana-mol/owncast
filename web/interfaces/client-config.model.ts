@@ -12,10 +12,12 @@ export interface ClientConfig {
   chatDisabled: boolean;
   externalActions: any[];
   customStyles: string;
+  appearanceVariables: Map<string, string>;
   maxSocketPayloadSize: number;
   federation: Federation;
   notifications: Notifications;
   authentication: Authentication;
+  socketHostOverride?: string;
 }
 
 interface Authentication {
@@ -57,6 +59,7 @@ export function makeEmptyClientConfig(): ClientConfig {
     chatDisabled: false,
     externalActions: [],
     customStyles: '',
+    appearanceVariables: new Map(),
     maxSocketPayloadSize: 0,
     federation: {
       enabled: false,

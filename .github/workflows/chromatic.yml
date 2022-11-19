@@ -7,6 +7,9 @@ on:
   push:
     paths:
       - web/**
+  pull_request_target:
+    paths:
+      - web/**
 
 # List of jobs
 jobs:
@@ -17,9 +20,13 @@ jobs:
       run:
         working-directory: ./web
 
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
     steps:
       - name: Check out code
-        if: ${{ github.actor != 'renovate[bot]' }}
+        if: ${{ github.actor != 'renovate[bot]' && github.actor != 'renovate' }}
         uses: actions/checkout@v3
         with:
           # Make sure the actual branch is checked out when running on pull requests
@@ -28,16 +35,16 @@ jobs:
           fetch-depth: 0
 
       - name: Install dependencies
-        if: ${{ github.actor != 'renovate[bot]' }}
+        if: ${{ github.actor != 'renovate[bot]' && github.actor != 'renovate' }}
         run: npm install
 
       - name: Publish to Chromatic
-        if: ${{ github.actor != 'renovate[bot]' }}
+        if: ${{ github.actor != 'renovate[bot]' && github.actor != 'renovate' }}
 
         uses: chromaui/action@v1
         # Chromatic GitHub Action options
         with:
           workingDir: web
           autoAcceptChanges: webv2
-          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          projectToken: f47410569b62
           onlyChanged: true

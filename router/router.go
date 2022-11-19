@@ -58,18 +58,6 @@ func Start() error {
 	// web config api
 	http.HandleFunc("/api/config", controllers.GetWebConfig)
 
-	// pre v0.0.8 chat embed
-	http.HandleFunc("/embed/chat", controllers.GetChatEmbedreadonly)
-
-	// readonly chat embed
-	http.HandleFunc("/embed/chat/readonly", controllers.GetChatEmbedreadonly)
-
-	// readwrite chat embed
-	http.HandleFunc("/embed/chat/readwrite", controllers.GetChatEmbedreadwrite)
-
-	// video embed
-	http.HandleFunc("/embed/video", controllers.GetVideoEmbed)
-
 	// return the YP protocol data
 	http.HandleFunc("/api/yp", yp.GetYPResponse)
 
@@ -208,6 +196,9 @@ func Start() error {
 
 	// Set video codec
 	http.HandleFunc("/api/admin/config/video/codec", middleware.RequireAdminAuth(admin.SetVideoCodec))
+
+	// Set style/color/css values
+	http.HandleFunc("/api/admin/config/appearance", middleware.RequireAdminAuth(admin.SetCustomColorVariableValues))
 
 	// Return all webhooks
 	http.HandleFunc("/api/admin/webhooks", middleware.RequireAdminAuth(admin.GetWebhooks))
@@ -384,6 +375,9 @@ func Start() error {
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		chat.HandleClientConnection(w, r)
 	})
+
+	// Optional public static files
+	http.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir("./public"))))
 
 	port := config.WebServerPort
 	ip := config.WebServerIP

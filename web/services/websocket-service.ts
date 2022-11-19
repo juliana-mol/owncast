@@ -14,36 +14,34 @@ export default class WebsocketService {
 
   websocketReconnectTimer: ReturnType<typeof setTimeout>;
 
+  isShutdown = false;
+
+  backOff = 1000;
+
   handleMessage?: (message: SocketEvent) => void;
 
-  constructor(accessToken, path) {
+  constructor(accessToken, path, host) {
     this.accessToken = accessToken;
     this.path = path;
-    // this.websocketReconnectTimer = null;
-    // this.accessToken = accessToken;
+    this.websocketReconnectTimer = null;
+    this.isShutdown = false;
 
-    // this.websocketConnectedListeners = [];
-    // this.websocketDisconnectListeners = [];
-    // this.rawMessageListeners = [];
+    this.createAndConnect = this.createAndConnect.bind(this);
+    this.shutdown = this.shutdown.bind(this);
 
-    // this.send = this.send.bind(this);
-    // this.createAndConnect = this.createAndConnect.bind(this);
-    // this.scheduleReconnect = this.scheduleReconnect.bind(this);
-    // this.shutdown = this.shutdown.bind(this);
-
-    // this.isShutdown = false;
-
-    this.createAndConnect();
+    this.createAndConnect(host);
   }
 
-  createAndConnect() {
-    const url = new URL('ws://localhost:8080/ws');
+  createAndConnect(host) {
+    const url = new URL(host);
+    url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    url.pathname = '/ws';
+    url.port = window.location.port === '3000' ? '8080' : window.location.port;
     url.searchParams.append('accessToken', this.accessToken);
 
     console.debug('connecting to ', url.toString());
     const ws = new WebSocket(url.toString());
     ws.onopen = this.onOpen.bind(this);
-    // ws.onclose = this.onClose.bind(this);
     ws.onerror = this.onError.bind(this);
     ws.onmessage = this.onMessage.bind(this);
 
@@ -58,12 +56,27 @@ export default class WebsocketService {
 
   // On ws error just close the socket and let it re-connect again for now.
   onError(e) {
-    console.error(e);
     handleNetworkingError(`Socket error: ${e}`);
     this.websocket.close();
-    // if (!this.isShutdown) {
-    //   this.scheduleReconnect();
-    // }
+    if (!this.isShutdown) {
+      this.scheduleReconnect();
+    }
+  }
+
+  scheduleReconnect() {
+    if (this.websocketReconnectTimer) {
+      clearTimeout(this.websocketReconnectTimer);
+    }
+    this.backOff *= 2;
+    this.websocketReconnectTimer = setTimeout(
+      this.createAndConnect,
+      5000 + Math.min(this.backOff, 10_000),
+    );
+  }
+
+  shutdown() {
+    this.isShutdown = true;
+    this.websocket.close();
   }
 
   /*
@@ -84,8 +97,8 @@ export default class WebsocketService {
         if (this.handleMessage) {
           this.handleMessage(socketEvent);
         }
-      } catch (e) {
-        console.error(e, e.data);
+      } catch (err) {
+        console.error(err, err.data);
         return;
       }
 

@@ -1,16 +1,48 @@
 /* ------------------------- //
-  BUTTONS
+HEADER
 // ------------------------- */
 
-.ant-btn {
-  height: 2rem;
+.ant-layout-header {
+  line-height: unset;
+  height: auto;
+}
+/* ------------------------- //
+BUTTONS
+// ------------------------- */
 
+.ant-btn[disabled] {
+  background-color: var(--theme-color-components-secondary-button-background-disabled);
+  color: var(--theme-color-components-secondary-button-text-disabled);
+  border-color: var(--theme-color-components-secondary-button-border-disabled);
+  &:hover,
+  &:focus {
+    background-color: var(--theme-color-components-secondary-button-background-disabled);
+    color: var(--theme-color-components-secondary-button-text-disabled);
+    border-color: var(--theme-color-components-secondary-button-border-disabled);
+  }
+}
+
+.ant-btn-default {
+  color: currentColor;
+  border-width: 2px;
+  border-color: transparent;
+  border-radius: 0.15rem;
+  background-color: rgba(0, 0, 0, 0.1);
+  &:hover,
+  &:focus {
+    color: currentColor;
+    border-color: rgba(0, 0, 0, 0.55);
+    background-color: var(--theme-color-components-secondary-button-background);
+  }
+}
+
+.ant-btn-primary {
+  height: 2rem;
   font-size: 0.85rem;
   font-weight: bold;
   border-width: 2px;
   border-radius: var(--theme-rounded-corners);
   color: var(--theme-color-components-primary-button-text);
-  border-color: var(--theme-color-action);
 
   &:hover,
   &:focus {
@@ -25,20 +57,6 @@
   &[ant-click-animating-without-extra-node]:after {
     animation: 0s !important;
   }
-}
-.ant-btn[disabled] {
-  background-color: var(--theme-color-components-secondary-button-background-disabled);
-  color: var(--theme-color-components-secondary-button-text-disabled);
-  border-color: var(--theme-color-components-secondary-button-border-disabled);
-  &:hover,
-  &:focus {
-    background-color: var(--theme-color-components-secondary-button-background-disabled);
-    color: var(--theme-color-components-secondary-button-text-disabled);
-    border-color: var(--theme-color-components-secondary-button-border-disabled);
-  }
-}
-
-.ant-btn-primary {
   background-color: var(--theme-color-components-primary-button-background);
   color: var(--theme-color-components-primary-button-text);
   border-color: var(--theme-color-components-primary-button-background);
@@ -76,7 +94,7 @@
 }
 
 /* ------------------------- //
-  DROPDOWN
+DROPDOWN
 // ------------------------- */
 
 .ant-dropdown-menu {
@@ -100,7 +118,9 @@
 .ant-modal-title {
   color: var(--theme-color-components-modal-header-text);
 }
-
+.ant-modal-body {
+  overflow: scroll;
+}
 .ant-modal {
   color: var(--theme-color-components-text-on-light);
   h1 {
@@ -108,10 +128,14 @@
   }
 }
 
+.ant-input-affix-wrapper {
+  padding: 2px 5px;
+  background-color: var(--theme-color-components-form-field-background);
+}
+
 .ant-input {
   background-color: var(--theme-color-components-form-field-background);
   color: var(--theme-color-components-form-field-text);
-  border-color: var(--theme-color-components-form-field-border);
   &::placeholder {
     color: var(--theme-color-components-form-field-placeholder);
   }
@@ -144,6 +168,21 @@
     }
   }
 }
+
+.ant-tabs {
+  height: 100%;
+  .ant-tabs-content-holder {
+    height: 100%;
+  }
+  .ant-tabs-content {
+    height: 100% !important;
+    overflow: auto;
+    .ant-tabs-tabpane-active {
+      height: 100%;
+    }
+  }
+}
+
 .ant-tabs-ink-bar {
   background-color: var(--theme-color-action);
 }

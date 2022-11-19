@@ -250,10 +250,11 @@ export const ChatTextField: FC<ChatTextFieldProps> = ({ defaultText }) => {
       >
         <Slate editor={editor} value={defaultEditorValue}>
           <Editable
+            className="chat-text-input"
             onKeyDown={onKeyDown}
             onPaste={onPaste}
             renderElement={renderElement}
-            placeholder="Chat message goes here..."
+            placeholder="Send a message to chat"
             style={{ width: '100%' }}
             autoFocus
           />
@@ -265,8 +266,8 @@ export const ChatTextField: FC<ChatTextFieldProps> = ({ defaultText }) => {
               />
             }
             trigger="click"
-            onVisibleChange={visible => setShowEmojis(visible)}
-            visible={showEmojis}
+            onOpenChange={open => setShowEmojis(open)}
+            open={showEmojis}
           />
         </Slate>
 

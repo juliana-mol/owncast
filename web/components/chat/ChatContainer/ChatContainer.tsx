@@ -15,6 +15,7 @@ import { ChatModeratorNotification } from '../ChatModeratorNotification/ChatMode
 import { ChatSystemMessage } from '../ChatSystemMessage/ChatSystemMessage';
 import { ChatJoinMessage } from '../ChatJoinMessage/ChatJoinMessage';
 import { ScrollToBotBtn } from './ScrollToBotBtn';
+import { ChatActionMessage } from '../ChatActionMessage/ChatActionMessage';
 
 export type ChatContainerProps = {
   messages: ChatMessage[];
@@ -31,6 +32,10 @@ function shouldCollapseMessages(messages: ChatMessage[], index: number): boolean
   }
 
   const message = messages[index];
+  if (!message || !message.user) {
+    return false;
+  }
+
   const {
     user: { id },
   } = message;
@@ -111,6 +116,10 @@ export const ChatContainer: FC<ChatContainerProps> = ({
     );
   };
 
+  const getActionMessage = (message: ChatMessage) => {
+    const { body } = message;
+    return <ChatActionMessage body={body} />;
+  };
   const getConnectedInfoMessage = (message: ConnectedClientInfoEvent) => {
     const modStatusUpdate = checkIsModerator(message);
     if (!modStatusUpdate) {
@@ -148,6 +157,8 @@ export const ChatContainer: FC<ChatContainerProps> = ({
         return getConnectedInfoMessage(message);
       case MessageType.USER_JOINED:
         return getUserJoinedMessage(message as ChatMessage);
+      case MessageType.CHAT_ACTION:
+        return getActionMessage(message as ChatMessage);
       case MessageType.SYSTEM:
         return (
           <ChatSystemMessage
@@ -183,9 +194,13 @@ export const ChatContainer: FC<ChatContainerProps> = ({
   );
 
   return (
-    <div className={styles.chatContainer}>
+    <div id="chat-container" className={styles.chatContainer}>
       {MessagesTable}
-      {showInput && <ChatTextField />}
+      {showInput && (
+        <div className={styles.chatTextField}>
+          <ChatTextField />
+        </div>
+      )}
     </div>
   );
 };

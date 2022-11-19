@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { FC } from 'react';
 import { SocialLink } from '../../../interfaces/social-link.model';
 import styles from './SocialLinks.module.scss';
@@ -15,9 +16,17 @@ export const SocialLinks: FC<SocialLinksProps> = ({ links }) => (
         href={link.url}
         className={styles.link}
         target="_blank"
-        rel="noreferrer"
+        // eslint-disable-next-line react/no-invalid-html-attribute
+        rel="noreferrer me"
       >
-        <img src={link.icon} alt={link.platform} title={link.platform} className={styles.link} />
+        <Image
+          src={link.icon || '/img/platformlogos/default.svg'}
+          alt={link.platform}
+          title={link.platform}
+          className={styles.link}
+          width="30"
+          height="30"
+        />
       </a>
     ))}
   </div>

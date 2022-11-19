@@ -1,8 +1,30 @@
+@import '../../../styles/mixins.scss';
+
 .root {
   display: grid;
   grid-template-columns: 1fr auto;
-  height: 100%;
+  width: 100%;
   background-color: var(--theme-color-background-main);
+
+  @include screen(desktop) {
+    height: var(--content-height);
+  }
+
+  .mainSection {
+    display: flex;
+    overflow-y: scroll;
+    flex-direction: column;
+  }
+
+  .mainSection::-webkit-scrollbar {
+    width: 5px;
+    height: auto;
+    background-color: var(--theme-color-components-scrollbar-background);
+  }
+
+  .mainSection::-webkit-scrollbar-thumb {
+    background: var(--theme-color-components-scrollbar-thumb);
+  }
 
   .topSection {
     padding: 0;
@@ -24,8 +46,12 @@
 }
 
 .loadingSpinner {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  z-index: 999999;
+  display: grid;
+}
+
+.main {
+  display: grid;
+  flex: 1;
+  height: 100%;
+  grid-template-rows: 1fr auto;
 }

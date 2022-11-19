@@ -5,7 +5,7 @@ import styles from './Modal.module.scss';
 export type ModalProps = {
   title: string;
   url?: string;
-  visible: boolean;
+  open: boolean;
   handleOk?: () => void;
   handleCancel?: () => void;
   afterClose?: () => void;
@@ -17,7 +17,7 @@ export type ModalProps = {
 export const Modal: FC<ModalProps> = ({
   title,
   url,
-  visible,
+  open,
   handleOk,
   handleCancel,
   afterClose,
@@ -30,6 +30,7 @@ export const Modal: FC<ModalProps> = ({
   const modalStyle = {
     padding: '0px',
     minHeight: height,
+    height: height ?? '100%',
   };
 
   const iframe = url && (
@@ -51,7 +52,7 @@ export const Modal: FC<ModalProps> = ({
   return (
     <AntModal
       title={title}
-      visible={visible}
+      open={open}
       onOk={handleOk}
       onCancel={handleCancel}
       afterClose={afterClose}
@@ -82,6 +83,4 @@ Modal.defaultProps = {
   handleOk: undefined,
   handleCancel: undefined,
   afterClose: undefined,
-  height: '40vh',
-  width: '70%',
 };

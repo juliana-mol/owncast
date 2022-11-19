@@ -1,7 +1,7 @@
 /* eslint-disable react/no-danger */
 /* eslint-disable react/no-unescaped-entities */
 import { Layout } from 'antd';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import Head from 'next/head';
 import { FC, useEffect, useRef } from 'react';
 import {
@@ -9,6 +9,7 @@ import {
   isChatAvailableSelector,
   clientConfigStateAtom,
   fatalErrorStateAtom,
+  isMobileAtom,
 } from '../stores/ClientConfigStore';
 import { Content } from '../ui/Content/Content';
 import { Header } from '../ui/Header/Header';
@@ -16,12 +17,16 @@ import { ClientConfig } from '../../interfaces/client-config.model';
 import { DisplayableError } from '../../types/displayable-error';
 import { FatalErrorStateModal } from '../modals/FatalErrorStateModal/FatalErrorStateModal';
 import setupNoLinkReferrer from '../../utils/no-link-referrer';
-import { ServerRenderedMetadata } from '../ServerRendered/ServerRenderedMetadata';
+import { TitleNotifier } from '../TitleNotifier/TitleNotifier';
 import { ServerRenderedHydration } from '../ServerRendered/ServerRenderedHydration';
 
+import Footer from '../ui/Footer/Footer';
+import { Theme } from '../theme/Theme';
+
 export const Main: FC = () => {
+  const [isMobile] = useRecoilState<boolean | undefined>(isMobileAtom);
   const clientConfig = useRecoilValue<ClientConfig>(clientConfigStateAtom);
-  const { name, title, customStyles } = clientConfig;
+  const { name, title, customStyles, version } = clientConfig;
   const isChatAvailable = useRecoilValue<boolean>(isChatAvailableSelector);
   const fatalError = useRecoilValue<DisplayableError>(fatalErrorStateAtom);
 
@@ -34,17 +39,10 @@ export const Main: FC = () => {
 
   const isProduction = process.env.NODE_ENV === 'production';
 
-  const hydrationScript = isProduction
-    ? `
-	window.statusHydration = {{.StatusJSON}};
-	window.configHydration = {{.ServerConfigJSON}};
-	`
-    : null;
-
   return (
     <>
       <Head>
-        {isProduction && <ServerRenderedMetadata />}
+        {isProduction && <ServerRenderedHydration />}
 
         <link rel="apple-touch-icon" sizes="57x57" href="/img/favicon/apple-icon-57x57.png" />
         <link rel="apple-touch-icon" sizes="60x60" href="/img/favicon/apple-icon-60x60.png" />
@@ -65,24 +63,63 @@ export const Main: FC = () => {
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon/favicon-96x96.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon/favicon-16x16.png" />
         <link rel="manifest" href="/manifest.json" />
-
         <link href="/api/auth/provider/indieauth" />
-
         <meta name="msapplication-TileColor" content="#ffffff" />
         <meta name="msapplication-TileImage" content="/img/favicon/ms-icon-144x144.png" />
         <meta name="theme-color" content="#ffffff" />
 
         <style>{customStyles}</style>
-        {isProduction && <ServerRenderedHydration hydrationScript={hydrationScript} />}
+        <base target="_blank" />
       </Head>
 
+      {isProduction ? (
+        <Head>
+          {name ? <title>{name}</title> : <title>{`{{.Name}}`}</title>}
+          <meta name="description" content="{{.Summary}}" />
+
+          <meta property="og:title" content="{{.Name}}" />
+          <meta property="og:site_name" content="{{.Name}}" />
+          <meta property="og:url" content="{{.RequestedURL}}" />
+          <meta property="og:description" content="{{.Summary}}" />
+          <meta property="og:type" content="video.other" />
+          <meta property="video:tag" content="{{.TagsString}}" />
+
+          <meta property="og:image" content="{{.RequestedURL}}{{.Thumbnail}}" />
+          <meta property="og:image:url" content="{{.RequestedURL}}{{.Thumbnail}}" />
+          <meta property="og:image:alt" content="{{.RequestedURL}}{{.Image}}" />
+
+          <meta property="og:video" content="{{.RequestedURL}}/embed/video" />
+          <meta property="og:video:secure_url" content="{{.RequestedURL}}/embed/video" />
+          <meta property="og:video:height" content="315" />
+          <meta property="og:video:width" content="560" />
+          <meta property="og:video:type" content="text/html" />
+          <meta property="og:video:actor" content="{{.Name}}" />
+
+          <meta property="twitter:title" content="{{.Name}}" />
+          <meta property="twitter:url" content="{{.RequestedURL}}" />
+          <meta property="twitter:description" content="{{.Summary}}" />
+          <meta property="twitter:image" content="{{.Image}}" />
+          <meta property="twitter:card" content="player" />
+          <meta property="twitter:player" content="{{.RequestedURL}}/embed/video" />
+          <meta property="twitter:player:width" content="560" />
+          <meta property="twitter:player:height" content="315" />
+        </Head>
+      ) : (
+        <Head>
+          <title>{name}</title>
+        </Head>
+      )}
+
       <ClientConfigStore />
-      <Layout ref={layoutRef}>
+      <TitleNotifier />
+      <Theme />
+      <Layout ref={layoutRef} style={{ minHeight: '100vh' }}>
         <Header name={title || name} chatAvailable={isChatAvailable} chatDisabled={chatDisabled} />
         <Content />
         {fatalError && (
           <FatalErrorStateModal title={fatalError.title} message={fatalError.message} />
         )}
+        {!isMobile && <Footer version={version} />}
       </Layout>
     </>
   );

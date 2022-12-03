@@ -76,3 +76,11 @@ func TestAccountCaseInsensitive(t *testing.T) {
 		t.Errorf("Account names should be case-insensitive: %s %s", reg1.Account, reg2.Account)
 	}
 }
+
+func TestWrongCodeForValidationOTP(t *testing.T) {
+	accessToken := "random-access-token"
+	response, _ := ValidateFediverseOTP(accessToken, "wrong-code")
+	if response != false {
+		t.Errorf("Wrong code should return false.")
+	}
+}

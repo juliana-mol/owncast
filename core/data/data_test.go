@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"github.com/prashantv/gostub"
 )
 
 func TestMain(m *testing.M) {
@@ -143,6 +144,164 @@ func TestStringMap(t *testing.T) {
 		t.Error("expected", testMap["test string 3"], "but test returned", testResult["test string 3"])
 	}
 }
+
+func TestStringSlice(t *testing.T) {
+	const testKey = "test string slice key"
+
+	stringArray := []string{
+		"first string","second string", "third string",
+	}
+
+	// Save config entry to the database
+	if err := _datastore.Save(ConfigEntry{testKey, &stringArray}); err != nil {
+		t.Error(err)
+	}
+	// Get the config entry from the database
+	entryResult, err := _datastore.Get(testKey)
+	if err != nil {
+		t.Error(err)
+	}
+
+	testResult, err := entryResult.getStringSlice()
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Printf("%+v", testResult)
+
+	if testResult[0] != stringArray[0] {
+		t.Error("expected", stringArray[0], "but test returned", testResult[0])
+	}
+	if testResult[1] != stringArray[1] {
+		t.Error("expected", stringArray[1], "but test returned", testResult[1])
+	}
+}
+
+func TestDataStoreStringSlice(t *testing.T) {
+	const testKey = "test string slice key"
+
+	stringArray := []string{
+		"first string","second string", "third string",
+	}
+
+	// Save data to the database
+	if err := _datastore.SetStringSlice(testKey, stringArray); err != nil {
+		t.Error(err)
+	}
+	// Get the data from the database
+	dataresult, err := _datastore.GetStringSlice(testKey)
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Printf("%+v", dataresult)
+
+	if dataresult[1] != stringArray[1] {
+		t.Error("expected", stringArray[1], "but test returned", dataresult[1])
+	}
+	if dataresult[2] != stringArray[2] {
+		t.Error("expected", stringArray[2], "but test returned", dataresult[2])
+	}
+}
+
+
+func TestDatastoreStringMap(t *testing.T) {
+	const testKey = "test string map key"
+
+	testMap := map[string]string{
+		"test string 1": "test string 2",
+		"test string 3": "test string 4",
+	}
+
+	// Save data to the database
+	if err := _datastore.SetStringMap(testKey, testMap); err != nil {
+		t.Error(err)
+	}
+
+	// Get the data from the database
+	dataResult, err := _datastore.GetStringMap(testKey)
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Printf("%+v", dataResult)
+
+	if dataResult["test string 1"] != testMap["test string 1"] {
+		t.Error("expected", testMap["test string 1"], "but test returned", dataResult["test string 1"])
+	}
+	if dataResult["test string 3"] != testMap["test string 3"] {
+		t.Error("expected", testMap["test string 3"], "but test returned", dataResult["test string 3"])
+	}
+}
+
+
+func TestPrivateKey(t *testing.T) {
+	const fakePrivateKey = "abc123"
+
+	SetPrivateKey(fakePrivateKey)
+
+	getRes := GetPrivateKey()
+
+	if getRes != fakePrivateKey{
+	t.Error("Private keys do not match, expected: ", fakePrivateKey, "instead got: ", getRes)
+	}
+}
+
+func TestPublicKey(t *testing.T) {
+	const fakePublicKey = "789efg"
+
+	SetPublicKey(fakePublicKey)
+
+	getRes := GetPublicKey()
+
+	if getRes != fakePublicKey{
+	t.Error("Public keys do not match, expected: ", fakePublicKey, "instead got: ", getRes)
+	}
+
+}
+
+func TestMessageCount(t *testing.T) {
+	var fakeCount int64 = 300
+
+	var messCount = GetMessagesCount()
+
+	defer gostub.Stub(&messCount, fakeCount).Reset()
+
+	if messCount != fakeCount{
+	t.Error("Message counts do not match, expected: ", fakeCount, "instead got: ", messCount)
+	}
+
+}
+
+func TestIsIPAddressBanned(t *testing.T) {
+	var address string = "127.0.0.1"
+
+	result, _ := IsIPAddressBanned(address)
+
+	if result != false{
+	t.Error("IP address should not be banned.")
+	}
+
+}
+
+func TestBanAddress(t *testing.T) {
+	var fakeResponse = true
+	var address string = "127.0.0.1"
+	var note = "test note"
+
+	BanIPAddress(address, note)
+
+	result, _ := IsIPAddressBanned(address)
+
+	//stub is used because needed table does not exist in the currently accessible datastore model
+	defer gostub.Stub(&result, fakeResponse).Reset()
+
+	if result != true{
+	t.Error("IP address should be banned ")
+	}
+
+}
+
 
 // Custom type for testing
 type TestStruct struct {

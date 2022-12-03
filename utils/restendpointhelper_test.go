@@ -37,3 +37,15 @@ func TestReadParameter(t *testing.T) {
 		}
 	}
 }
+
+func TestWrongLengthPattern(t *testing.T) {
+	pattern := "/hello/"
+	requestURL := "/abc/def/"
+
+	_, err := mapPatternWithRequestURL(pattern, requestURL)
+
+	if err.Error() != "the length of pattern and request Url does not match" {
+		t.Error("Wrong pattern should return this error: ", "the length of pattern and request Url does not match", "instead got: ", err.Error())
+	}
+
+}

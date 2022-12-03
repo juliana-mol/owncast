@@ -198,8 +198,8 @@ func SetExtraPageContent(w http.ResponseWriter, r *http.Request) {
 	controllers.WriteSimpleResponse(w, true, "changed")
 }
 
-// SetStreamKey will handle the web config request to set the server stream key.
-func SetStreamKey(w http.ResponseWriter, r *http.Request) {
+// SetAdminPassword will handle the web config request to set the server admin password.
+func SetAdminPassword(w http.ResponseWriter, r *http.Request) {
 	if !requirePOST(w, r) {
 		return
 	}
@@ -209,7 +209,7 @@ func SetStreamKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := data.SetStreamKey(configValue.Value.(string)); err != nil {
+	if err := data.SetAdminPassword(configValue.Value.(string)); err != nil {
 		controllers.WriteSimpleResponse(w, false, err.Error())
 		return
 	}
@@ -788,4 +788,29 @@ func getValuesFromRequest(w http.ResponseWriter, r *http.Request) ([]ConfigValue
 	}
 
 	return values, true
+}
+
+// SetStreamKeys will set the valid stream keys.
+func SetStreamKeys(w http.ResponseWriter, r *http.Request) {
+	if !requirePOST(w, r) {
+		return
+	}
+
+	type streamKeysRequest struct {
+		Value []models.StreamKey `json:"value"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	var streamKeys streamKeysRequest
+	if err := decoder.Decode(&streamKeys); err != nil {
+		controllers.WriteSimpleResponse(w, false, "unable to update stream keys with provided values")
+		return
+	}
+
+	if err := data.SetStreamKeys(streamKeys.Value); err != nil {
+		controllers.WriteSimpleResponse(w, false, err.Error())
+		return
+	}
+
+	controllers.WriteSimpleResponse(w, true, "changed")
 }

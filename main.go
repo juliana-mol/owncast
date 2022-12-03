@@ -23,7 +23,8 @@ var (
 	enableDebugOptions    = flag.Bool("enableDebugFeatures", false, "Enable additional debugging options.")
 	enableVerboseLogging  = flag.Bool("enableVerboseLogging", false, "Enable additional logging.")
 	restoreDatabaseFile   = flag.String("restoreDatabase", "", "Restore an Owncast database backup")
-	newStreamKey          = flag.String("streamkey", "", "Set your stream key/admin password")
+	newAdminPassword      = flag.String("adminpassword", "", "Set your admin password")
+	newStreamKey          = flag.String("streamkey", "", "Set a temporary stream key for this session")
 	webServerPortOverride = flag.String("webserverport", "", "Force the web server to listen on a specific port")
 	webServerIPOverride   = flag.String("webserverip", "", "Force web server to listen on this IP address")
 	rtmpPortOverride      = flag.Int("rtmpport", 0, "Set listen port for the RTMP server")
@@ -42,7 +43,7 @@ func main() {
 
 	// Create the data directory if needed
 	if !utils.DoesFileExists("data") {
-		if err := os.Mkdir("./data", 0700); err != nil {
+		if err := os.Mkdir("./data", 0o700); err != nil {
 			log.Fatalln("Cannot create data directory", err)
 		}
 	}
@@ -54,7 +55,7 @@ func main() {
 			log.Fatalln("Unable to remove temp dir!")
 		}
 	}
-	if err := os.Mkdir(config.TempDir, 0700); err != nil {
+	if err := os.Mkdir(config.TempDir, 0o700); err != nil {
 		log.Fatalln("Unable to create temp dir!", err)
 	}
 
@@ -101,13 +102,18 @@ func main() {
 }
 
 func handleCommandLineFlags() {
-	if *newStreamKey != "" {
-		if err := data.SetStreamKey(*newStreamKey); err != nil {
-			log.Errorln("Error setting your stream key.", err)
+	if *newAdminPassword != "" {
+		if err := data.SetAdminPassword(*newAdminPassword); err != nil {
+			log.Errorln("Error setting your admin password.", err)
 			log.Exit(1)
 		} else {
-			log.Infoln("Stream key changed")
+			log.Infoln("Admin password changed")
 		}
+	}
+
+	if *newStreamKey != "" {
+		log.Println("Temporary stream key is set for this session.")
+		config.TemporaryStreamKey = *newStreamKey
 	}
 
 	// Set the web server port

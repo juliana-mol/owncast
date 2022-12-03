@@ -16,6 +16,7 @@
   color: var(--text-color-secondary);
   & .toBottomWrap {
     & .toBottomBtn {
+      z-index: 9999;
       border: none;
       background-color: gray;
     }
@@ -50,6 +51,7 @@
   flex-grow: 1;
   overflow-y: scroll;
   overflow-x: hidden;
+  margin-bottom: 10px;
 }
 
 .virtuoso::-webkit-scrollbar {
